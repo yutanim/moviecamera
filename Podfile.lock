@@ -1,0 +1,18 @@
+PODS:
+  - GPUImage (0.1.7)
+  - R.swift (3.2.0):
+    - R.swift.Library (~> 3.0.2)
+  - R.swift.Library (3.0.2)
+
+DEPENDENCIES:
+  - GPUImage
+  - R.swift
+
+SPEC CHECKSUMS:
+  GPUImage: 733a5f0fab92df9de1c37ba9df520a833ccb406d
+  R.swift: 207a372a2b5977caef440c696a368009460641d1
+  R.swift.Library: fbdec16c9802ad104fc1ba53415dc190e6ec5c73
+
+PODFILE CHECKSUM: 061c5733af34db9c08c8fddba8016fc8ae7f0079
+
+COCOAPODS: 1.2.0

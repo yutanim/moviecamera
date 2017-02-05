@@ -8,3 +8,4 @@ Pods
 !default.perspectivev3
 xcuserdata
 profile
+*.generated.swift
