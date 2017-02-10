@@ -14,14 +14,7 @@ import GPUImage
 class MoviePreviewViewController: UIViewController {
     var moviePath: URL?
     @IBOutlet weak var previewView: UIView!
-    @IBOutlet weak var textButton: UIButton!
-    var filter:GPUImageFilter!
-    var blendFilter: GPUImageAlphaBlendFilter!
-    var textInput : GPUImageUIElement?
-    var vi: GPUImageUIElement?
-    var composition = AVMutableComposition()
     let textLayer = CATextLayer()
-    let overlayLayer = CALayer()
     let videoLayer = CALayer()
     var mixComp = AVMutableComposition()
     var comp = AVMutableVideoComposition()
@@ -44,28 +37,52 @@ class MoviePreviewViewController: UIViewController {
         guard let url = moviePath else {
             return
         }
-        self.compositeVideo(url: url)
+        self.playItemWithAsset(asset: AVURLAsset(url: url))
         self.previewView.frame = CGRect(x: 0, y: 60, width: self.view.frame.width, height: self.view.frame.width * 4/3)
+
+        let overlayLayer = CALayer()
+        setupTextField()
+        addKeyboardObserver()
+        setupTexLayer()
+        
+        overlayLayer.frame = CGRect(x: 0, y: 0, width: self.previewView.frame.width, height: self.previewView.frame.height)
+        videoLayer.frame = CGRect(x: 0, y: 0, width: self.previewView.frame.width, height: self.previewView.frame.height)
+        
+        overlayLayer.addSublayer(textLayer)
+        self.previewView.layer.addSublayer(videoLayer)
+        self.previewView.layer.addSublayer(playerLayer)
+        self.previewView.layer.addSublayer(overlayLayer)
+    }
+    
+    func setupTextField(){
         textField.frame = CGRect(x: 0, y: 60, width: self.view.frame.width, height: 50)
-        textField.backgroundColor = UIColor.red
+        textField.backgroundColor = UIColor.clear
         textField.textColor = UIColor.cyan
         textField.delegate = self
         textField.returnKeyType = .done
-        
+    }
+    
+    func addKeyboardObserver() {
         NotificationCenter.default.addObserver(self, selector:#selector(MoviePreviewViewController.notificationFromKeyBoard(_:)), name:NSNotification.Name.UIKeyboardWillShow,        object:nil)
         NotificationCenter.default.addObserver(self, selector:#selector(MoviePreviewViewController.notificationFromKeyBoard(_:)), name:NSNotification.Name.UIKeyboardDidShow,         object:nil)
         NotificationCenter.default.addObserver(self, selector:#selector(MoviePreviewViewController.notificationFromKeyBoard(_:)), name:NSNotification.Name.UIKeyboardWillHide,        object:nil)
         NotificationCenter.default.addObserver(self, selector:#selector(MoviePreviewViewController.notificationFromKeyBoard(_:)), name:NSNotification.Name.UIKeyboardDidHide,         object:nil)
         NotificationCenter.default.addObserver(self, selector:#selector(MoviePreviewViewController.notificationFromKeyBoard(_:)), name:NSNotification.Name.UIKeyboardWillChangeFrame, object:nil)
         NotificationCenter.default.addObserver(self, selector:#selector(MoviePreviewViewController.notificationFromKeyBoard(_:)), name:NSNotification.Name.UIKeyboardDidHide,         object:nil)
-        self.previewView.layer.addSublayer(videoLayer)
-        self.previewView.layer.addSublayer(playerLayer)
-        self.previewView.layer.addSublayer(overlayLayer)
     }
     
     func estimateKeyboardOriginY() ->  CGFloat {
         return  (self.view.frame.height - lastKeyboardFrame.height - self.textField.frame.height)
-
+    }
+    
+    func prepareAVPlayerWithAVMutableComposition(_ compositon: AVMutableComposition) {
+        let item = AVPlayerItem(asset: mixComp)
+        NotificationCenter.default.addObserver(self, selector: #selector(MoviePreviewViewController.didItemFinish), name: .AVPlayerItemDidPlayToEndTime, object: nil)
+        item.videoComposition = comp
+        player = AVPlayer(playerItem: item)
+        playerLayer = AVPlayerLayer(player: player)
+        playerLayer.videoGravity = AVLayerVideoGravityResizeAspect
+        playerLayer.frame =  CGRect(x: 0, y: 0, width: self.previewView.frame.width, height: self.previewView.frame.height)
     }
     
     func notificationFromKeyBoard(_ notification: Notification) {
@@ -91,28 +108,14 @@ class MoviePreviewViewController: UIViewController {
         }, completion: nil)
     }
     
-    func compositeVideo(url: URL){
-        let asset = AVURLAsset(url: url)
-        compositionVideoTrack = mixComp.addMutableTrack(withMediaType: AVMediaTypeVideo, preferredTrackID: kCMPersistentTrackID_Invalid)
+    func playItemWithAsset(asset: AVURLAsset) {
+        if compositionVideoTrack == nil{
+            compositionVideoTrack = mixComp.addMutableTrack(withMediaType: AVMediaTypeVideo, preferredTrackID: kCMPersistentTrackID_Invalid)
+        }
         let videoTrack = asset.tracks(withMediaType: AVMediaTypeVideo).first
         try! compositionVideoTrack.insertTimeRange(CMTimeRange(start: kCMTimeZero, end: asset.duration), of: videoTrack!, at: kCMTimeZero)
-        
         compositionVideoTrack.preferredTransform = asset.tracks(withMediaType: AVMediaTypeVideo).flatMap{$0.preferredTransform}.first!
-        
-        textLayer.string = "testing"
-        textLayer.fontSize = 36
-        textLayer.frame = CGRect(x: 0, y: 200, width: self.view.frame.width, height: 100)
-        textLayer.alignmentMode = kCAAlignmentCenter
-        textLayer.backgroundColor = UIColor.clear.cgColor
-        textLayer.foregroundColor = UIColor.cyan.cgColor
-        
-        textLayer.masksToBounds = true
-        
-        videoLayer.frame = CGRect(x: 0, y: 0, width: self.previewView.frame.width, height: self.previewView.frame.height)
-        overlayLayer.frame = CGRect(x: 0, y: 0, width: self.previewView.frame.width, height: self.previewView.frame.height)
-
-        overlayLayer.addSublayer(textLayer)
-        
+       
         comp.renderSize = CGSize(width: self.previewView.frame.width, height:self.previewView.frame.width * 4/3 )
         comp.frameDuration = CMTimeMake(1, 30)
         let instruction = AVMutableVideoCompositionInstruction()
@@ -121,38 +124,28 @@ class MoviePreviewViewController: UIViewController {
         let layerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: videoTrack!)
         instruction.layerInstructions = [layerInstruction]
         comp.instructions = [instruction]
-        
-
-        let item = AVPlayerItem(asset: mixComp)
-        NotificationCenter.default.addObserver(self, selector: #selector(MoviePreviewViewController.didItemFinish), name: .AVPlayerItemDidPlayToEndTime, object: nil)
-        item.videoComposition = comp
-        player = AVPlayer(playerItem: item)
-        playerLayer = AVPlayerLayer(player: player)
-        playerLayer.videoGravity = AVLayerVideoGravityResizeAspect
-        playerLayer.frame =  CGRect(x: 0, y: 0, width: self.previewView.frame.width, height: self.previewView.frame.height)
-
-        
+        if player == nil {prepareAVPlayerWithAVMutableComposition(mixComp)
+        }
+        player.seek(to: kCMTimeZero)
         player.play()
 
     }
     
-    func didItemFinish(){
+    func setupTexLayer(){
+        textLayer.string = ""
+        textLayer.fontSize = 36
+        textLayer.frame = CGRect(x: 0, y: 200, width: self.view.frame.width, height: 100)
+        textLayer.alignmentMode = kCAAlignmentCenter
+        textLayer.backgroundColor = UIColor.clear.cgColor
+        textLayer.foregroundColor = UIColor.cyan.cgColor
+        textLayer.masksToBounds = true
+        textLayer.isHidden = true
+    }
+    
+    func didItemFinish() {
         let asset = AVURLAsset(url: moviePath!)
-        let videoTrack = asset.tracks(withMediaType: AVMediaTypeVideo).first
         compositionVideoTrack.removeTimeRange(CMTimeRange(start: kCMTimeZero, end: asset.duration))
-        try! compositionVideoTrack.insertTimeRange(CMTimeRange(start: kCMTimeZero, end: asset.duration), of: videoTrack!, at: kCMTimeZero)
-        compositionVideoTrack.preferredTransform = asset.tracks(withMediaType: AVMediaTypeVideo).flatMap{$0.preferredTransform}.first!
-        
-        comp.renderSize = CGSize(width: self.view.frame.width, height:self.view.frame.width * 4/3 )
-        comp.frameDuration = CMTimeMake(1, 30)
-        let instruction = AVMutableVideoCompositionInstruction()
-        instruction.timeRange = CMTimeRange(start: kCMTimeZero, end: mixComp.duration)
-        let layerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: videoTrack!)
-        instruction.layerInstructions = [layerInstruction]
-        comp.instructions = [instruction]
-        player.seek(to: kCMTimeZero)
-        player.play()
-
+        self.playItemWithAsset(asset: asset)
     }
     
     @IBAction func textButtonDidTouchDown(_ sender: UIButton) {
@@ -164,23 +157,26 @@ class MoviePreviewViewController: UIViewController {
     }
     
     @IBAction func saveButtonDidTouchUpInside(_ sender: UIButton) {
+        //ここで各layerを合成している
         comp.animationTool = AVVideoCompositionCoreAnimationTool(postProcessingAsVideoLayer: videoLayer, in: self.previewView.layer)
+        
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd h:m:s"
         let videoName = dateFormatter.string(from: Date())
-        let saveMixComp = mixComp
-        let saveComp = comp
-        let assetExport = AVAssetExportSession(asset: saveMixComp, presetName: AVAssetExportPreset640x480)
-        assetExport?.videoComposition = saveComp
-        
+        let assetExport = AVAssetExportSession(asset: mixComp, presetName: AVAssetExportPreset640x480)
+        assetExport?.videoComposition = comp
         var outputPathString = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).last
         outputPathString?.append("/\(videoName).mp4")
+        
         assetExport?.outputURL = URL(fileURLWithPath: outputPathString!)
         assetExport?.outputFileType = AVFileTypeMPEG4
+        // TODO: Export始まると白画面になるので対策を考える
         assetExport?.exportAsynchronously { handler -> Void in
             switch assetExport!.status {
             case AVAssetExportSessionStatus.failed:
-                // TODO: show error message to user
+                // TODO: ローカライズ
+                let alert = UIAlertController.init(title: "保存に失敗しました。", message: nil, preferredStyle: .alert)
+                self.present(alert, animated: true, completion: nil)
                 
                 break
             default :

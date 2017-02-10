@@ -62,7 +62,6 @@
                     </view>
                     <connections>
                         <outlet property="previewView" destination="jjN-5o-I2K" id="nJU-FY-3qG"/>
-                        <outlet property="textButton" destination="fBm-en-YXr" id="tYd-NL-im4"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="H2K-qs-xck" userLabel="First Responder" sceneMemberID="firstResponder"/>
