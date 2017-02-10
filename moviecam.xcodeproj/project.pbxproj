@@ -16,7 +16,7 @@
 		38DD37E11E44879200D70883 /* moviecamTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38DD37E01E44879200D70883 /* moviecamTests.swift */; };
 		38DD37EC1E44879200D70883 /* moviecamUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38DD37EB1E44879200D70883 /* moviecamUITests.swift */; };
 		38DD37FA1E44888C00D70883 /* GPUImage.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 38DD37F91E44888C00D70883 /* GPUImage.framework */; };
-		38DD37FC1E449D8A00D70883 /* MoviePreviewVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38DD37FB1E449D8A00D70883 /* MoviePreviewVC.swift */; };
+		38DD37FC1E449D8A00D70883 /* MoviePreviewViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38DD37FB1E449D8A00D70883 /* MoviePreviewViewController.swift */; };
 		38DD38051E482F0E00D70883 /* R.generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38DD38041E482F0E00D70883 /* R.generated.swift */; };
 		38DD38071E482F3200D70883 /* MoviePreviewViewController.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 38DD38061E482F3200D70883 /* MoviePreviewViewController.storyboard */; };
 		38DD38101E48730700D70883 /* Filter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38DD380F1E48730700D70883 /* Filter.swift */; };
@@ -59,7 +59,7 @@
 		38DD37EB1E44879200D70883 /* moviecamUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = moviecamUITests.swift; sourceTree = "<group>"; };
 		38DD37ED1E44879200D70883 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		38DD37F91E44888C00D70883 /* GPUImage.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GPUImage.framework; path = "Pods/../build/Debug-iphoneos/GPUImage/GPUImage.framework"; sourceTree = "<group>"; };
-		38DD37FB1E449D8A00D70883 /* MoviePreviewVC.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MoviePreviewVC.swift; sourceTree = "<group>"; };
+		38DD37FB1E449D8A00D70883 /* MoviePreviewViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MoviePreviewViewController.swift; sourceTree = "<group>"; };
 		38DD38041E482F0E00D70883 /* R.generated.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = R.generated.swift; sourceTree = SOURCE_ROOT; };
 		38DD38061E482F3200D70883 /* MoviePreviewViewController.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = MoviePreviewViewController.storyboard; sourceTree = "<group>"; };
 		38DD380F1E48730700D70883 /* Filter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Filter.swift; sourceTree = "<group>"; };
@@ -143,7 +143,7 @@
 				38DD37CB1E44879200D70883 /* AppDelegate.swift */,
 				38DD37CD1E44879200D70883 /* ViewController.swift */,
 				38DD380F1E48730700D70883 /* Filter.swift */,
-				38DD37FB1E449D8A00D70883 /* MoviePreviewVC.swift */,
+				38DD37FB1E449D8A00D70883 /* MoviePreviewViewController.swift */,
 				38DD38041E482F0E00D70883 /* R.generated.swift */,
 				38DD37CF1E44879200D70883 /* Main.storyboard */,
 				38DD38061E482F3200D70883 /* MoviePreviewViewController.storyboard */,
@@ -484,7 +484,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				38DD37FC1E449D8A00D70883 /* MoviePreviewVC.swift in Sources */,
+				38DD37FC1E449D8A00D70883 /* MoviePreviewViewController.swift in Sources */,
 				38DD38101E48730700D70883 /* Filter.swift in Sources */,
 				38DD37CE1E44879200D70883 /* ViewController.swift in Sources */,
 				38DD37CC1E44879200D70883 /* AppDelegate.swift in Sources */,
