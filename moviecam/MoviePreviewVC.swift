@@ -19,7 +19,6 @@ class MoviePreviewViewController: UIViewController {
     var blendFilter: GPUImageAlphaBlendFilter!
     var textInput : GPUImageUIElement?
     var vi: GPUImageUIElement?
-    var textField :UITextField!
     var composition = AVMutableComposition()
     let textLayer = CATextLayer()
     let overlayLayer = CALayer()
@@ -29,7 +28,8 @@ class MoviePreviewViewController: UIViewController {
     var player: AVPlayer!
     var playerLayer: AVPlayerLayer!
     var compositionVideoTrack: AVMutableCompositionTrack!
-    
+    let textField = UITextField.init()
+    var lastKeyboardFrame = CGRect.zero
     
     class func instantiate(path: String) -> MoviePreviewViewController {
         guard let vc =  R.storyboard.moviePreviewViewController.instantiateInitialViewController() else {
@@ -46,14 +46,50 @@ class MoviePreviewViewController: UIViewController {
         }
         self.compositeVideo(url: url)
         self.previewView.frame = CGRect(x: 0, y: 60, width: self.view.frame.width, height: self.view.frame.width * 4/3)
+        textField.frame = CGRect(x: 0, y: 60, width: self.view.frame.width, height: 50)
+        textField.backgroundColor = UIColor.red
+        textField.textColor = UIColor.cyan
+        textField.delegate = self
+        textField.returnKeyType = .done
         
-        NotificationCenter.default.addObserver(self, selector: #selector(MoviePreviewViewController.keyboardWillShow(_:)), name: NSNotification.Name.UIKeyboardWillShow, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(MoviePreviewViewController.keyboardWillHide(_:)), name: NSNotification.Name.UIKeyboardWillHide, object: nil)
+        NotificationCenter.default.addObserver(self, selector:#selector(MoviePreviewViewController.notificationFromKeyBoard(_:)), name:NSNotification.Name.UIKeyboardWillShow,        object:nil)
+        NotificationCenter.default.addObserver(self, selector:#selector(MoviePreviewViewController.notificationFromKeyBoard(_:)), name:NSNotification.Name.UIKeyboardDidShow,         object:nil)
+        NotificationCenter.default.addObserver(self, selector:#selector(MoviePreviewViewController.notificationFromKeyBoard(_:)), name:NSNotification.Name.UIKeyboardWillHide,        object:nil)
+        NotificationCenter.default.addObserver(self, selector:#selector(MoviePreviewViewController.notificationFromKeyBoard(_:)), name:NSNotification.Name.UIKeyboardDidHide,         object:nil)
+        NotificationCenter.default.addObserver(self, selector:#selector(MoviePreviewViewController.notificationFromKeyBoard(_:)), name:NSNotification.Name.UIKeyboardWillChangeFrame, object:nil)
+        NotificationCenter.default.addObserver(self, selector:#selector(MoviePreviewViewController.notificationFromKeyBoard(_:)), name:NSNotification.Name.UIKeyboardDidHide,         object:nil)
         self.previewView.layer.addSublayer(videoLayer)
         self.previewView.layer.addSublayer(playerLayer)
         self.previewView.layer.addSublayer(overlayLayer)
     }
     
+    func estimateKeyboardOriginY() ->  CGFloat {
+        return  (self.view.frame.height - lastKeyboardFrame.height - self.textField.frame.height)
+
+    }
+    
+    func notificationFromKeyBoard(_ notification: Notification) {
+        var newOriginY: CGFloat = 0
+        guard
+            let keyboardFrame = (notification.userInfo?[UIKeyboardFrameEndUserInfoKey] as AnyObject).cgRectValue,
+            let duration = (notification.userInfo?[UIKeyboardAnimationDurationUserInfoKey] as AnyObject).doubleValue,
+            let curve = (notification.userInfo?[UIKeyboardAnimationCurveUserInfoKey] as AnyObject).uintValue
+            else {
+            return
+        }
+        switch notification.name {
+        case NSNotification.Name.UIKeyboardWillHide:
+            lastKeyboardFrame = CGRect.zero
+            newOriginY = estimateKeyboardOriginY()
+            
+        default:
+            lastKeyboardFrame = keyboardFrame
+            newOriginY = estimateKeyboardOriginY()
+        }
+        UIView.animate(withDuration: duration, delay: 0, options: UIViewAnimationOptions(rawValue: curve), animations: {
+            self.textField.frame.origin.y = newOriginY
+        }, completion: nil)
+    }
     
     func compositeVideo(url: URL){
         let asset = AVURLAsset(url: url)
@@ -65,14 +101,13 @@ class MoviePreviewViewController: UIViewController {
         
         textLayer.string = "testing"
         textLayer.fontSize = 36
-        textLayer.frame = CGRect(x: 0, y: 0, width: 200, height: 100)
+        textLayer.frame = CGRect(x: 0, y: 200, width: self.view.frame.width, height: 100)
         textLayer.alignmentMode = kCAAlignmentCenter
         textLayer.backgroundColor = UIColor.clear.cgColor
         textLayer.foregroundColor = UIColor.cyan.cgColor
         
         textLayer.masksToBounds = true
         
-        let videoLayer = CALayer()
         videoLayer.frame = CGRect(x: 0, y: 0, width: self.previewView.frame.width, height: self.previewView.frame.height)
         overlayLayer.frame = CGRect(x: 0, y: 0, width: self.previewView.frame.width, height: self.previewView.frame.height)
 
@@ -110,7 +145,6 @@ class MoviePreviewViewController: UIViewController {
         
         comp.renderSize = CGSize(width: self.view.frame.width, height:self.view.frame.width * 4/3 )
         comp.frameDuration = CMTimeMake(1, 30)
-        videoLayer.frame = CGRect(x: 0, y: 0, width: self.previewView.frame.width, height: self.previewView.frame.height)
         let instruction = AVMutableVideoCompositionInstruction()
         instruction.timeRange = CMTimeRange(start: kCMTimeZero, end: mixComp.duration)
         let layerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: videoTrack!)
@@ -122,11 +156,11 @@ class MoviePreviewViewController: UIViewController {
     }
     
     @IBAction func textButtonDidTouchDown(_ sender: UIButton) {
-        if textLayer.isHidden {
-            self.textLayer.isHidden = false
-        } else {
-            textLayer.isHidden = true
-        }
+        self.textField.isHidden = false
+        self.view.addSubview(textField)
+        self.view.bringSubview(toFront: textField)
+        self.textField.becomeFirstResponder()
+        self.textLayer.isHidden = true
     }
     
     @IBAction func saveButtonDidTouchUpInside(_ sender: UIButton) {
@@ -134,8 +168,10 @@ class MoviePreviewViewController: UIViewController {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd h:m:s"
         let videoName = dateFormatter.string(from: Date())
-        let assetExport = AVAssetExportSession(asset: mixComp, presetName: AVAssetExportPreset640x480)
-        assetExport?.videoComposition = comp
+        let saveMixComp = mixComp
+        let saveComp = comp
+        let assetExport = AVAssetExportSession(asset: saveMixComp, presetName: AVAssetExportPreset640x480)
+        assetExport?.videoComposition = saveComp
         
         var outputPathString = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).last
         outputPathString?.append("/\(videoName).mp4")
@@ -144,9 +180,10 @@ class MoviePreviewViewController: UIViewController {
         assetExport?.exportAsynchronously { handler -> Void in
             switch assetExport!.status {
             case AVAssetExportSessionStatus.failed:
+                // TODO: show error message to user
+                
                 break
             default :
-                print("export has done!")
                 UISaveVideoAtPathToSavedPhotosAlbum(outputPathString!, nil, nil, nil)
                 break
             }
@@ -158,10 +195,6 @@ class MoviePreviewViewController: UIViewController {
     @IBAction func closeButtonDidTouchUpInside(_ sender: UIButton) {
         self.dismiss(animated: true, completion: nil)
     }
-    
-    func playerDidFinished(_: Notification) {
-        
-    }
 
 }
 
@@ -169,15 +202,29 @@ class MoviePreviewViewController: UIViewController {
 
 extension MoviePreviewViewController {
     
-    func keyboardWillHide(_ notification: Notification) {
-    }
-    
-    func keyboardWillShow(_ notification: Notification) {
-       let frame = notification.userInfo?[UIKeyboardFrameBeginUserInfoKey]
-    }
-    
     func closeKeyboard(_ gestureRecognizer: UITapGestureRecognizer) {
         self.view.endEditing(true)
+    }
+}
+
+extension MoviePreviewViewController: UITextFieldDelegate {
+    func textFieldDidEndEditing(_ textField: UITextField) {
+        self.textLayer.string = textField.text
+        textField.isHidden = true
+        textLayer.isHidden = false
+    }
+    
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        textField.resignFirstResponder()
+        return true
+    }
+    
+    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        if string == "\n" {
+            textField.resignFirstResponder()
+            return false
+        }
+        return true
     }
 }
     
